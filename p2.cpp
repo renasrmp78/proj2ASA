@@ -20,53 +20,49 @@ struct Compare {
 
 const int INF = INT_MAX;
 
-int dijkstra_line_changes(int start, const vector<vector<Edge>>& graph, int n, int l) {
-
-    priority_queue<State, vector<State>, Compare> pq; // Priority using State struct
-    vector<vector<int>> dist(n + 1, vector<int>(l + 1, INF)); // Matrix with line changes count
-
-    // Iterate through starts adjacencies and initiate pq
-    for (const auto& edge : graph[start]) {
-        int next_line = edge.line;
-        dist[start][next_line] = 0;
-        pq.emplace(0, start, next_line);
+void print_lines_graph(const vector<vector<int>>& lines_graph, int total_lines) {
+    cout << "Lines Graph:" << endl;
+    for (int i = 1; i <= total_lines; ++i) { // Start from line 1 (1-based indexing)
+        cout << "Line " << i << " connects to: ";
+        for (int neighbor : lines_graph[i]) {
+            cout << neighbor << " "; // Print each neighboring line
+        }
+        cout << endl; // Newline after printing all neighbors for this line
     }
+}
 
-    // Iterate through our priority queue
-    while (!pq.empty()) {
-        State top = pq.top(); // Biggest number of line changes
-        int changes = get<0>(top);
-        int u = get<1>(top);
-        int current_line = get<2>(top);
-        pq.pop(); // Remove from pq
 
-        if (changes > dist[u][current_line]) continue; // In case of line not changing
+int bfs_lines_graph(int start_line, const vector<vector<int>>& lines_graph, int total_lines) {
+    
+    vector<int> visited(total_lines + 1, -1); // Distance from start_line (-1 means not visited)
+    queue<int> q;
 
-        // Iterate thru adjacencies
-        for (const auto& edge : graph[u]) {
-            int v = edge.to; 
-            int next_line = edge.line;
-            int new_changes = changes + (current_line == next_line ? 0 : 1); // If line changes add 1
-             // If this path offers fewer line changes, update the distance and push the new state into the queue
-            if (new_changes < dist[v][next_line]) {
-                dist[v][next_line] = new_changes;
-                pq.emplace(new_changes, v, next_line); // Push the new state into the priority queu
+    // Initialize BFS
+    q.push(start_line);
+    visited[start_line] = 0;
+
+    int max_changes = 0;
+
+    while (!q.empty()) {
+        int current_line = q.front();
+        q.pop();
+
+        // Traverse all neighboring lines
+        for (int neighbor_line : lines_graph[current_line]) {
+            if (visited[neighbor_line] == -1) { // If not visited
+                visited[neighbor_line] = visited[current_line] + 1; // Increment line change
+                max_changes = max(max_changes, visited[neighbor_line]); // Update maximum distance
+                q.push(neighbor_line); // Push the neighbor to the queue
             }
         }
     }
 
-    // Find the maximum line changes across all reachable nodes
-    int max_changes = 0;
-    for (int v = 1; v <= n; ++v) {
-        int min_changes = INF;
-        for (int line = 1; line <= l; ++line) {
-            min_changes = min(min_changes, dist[v][line]);
-        }
-        if (min_changes == INF) return -1; // Unreachable node
-        max_changes = max(max_changes, min_changes);
+    // Check if all lines are reachable
+    for (int i = 1; i <= total_lines; i++) {
+        if (visited[i] == -1) return -1; // If a line is not reachable, return -1
     }
 
-    return max_changes;
+    return max_changes; // Return the maximum line changes
 }
 
 int main() {
@@ -74,6 +70,7 @@ int main() {
     cin >> n >> m >> l;
 
     vector<vector<Edge>> graph(n + 1);
+    vector<vector<int>> lines_graph(l + 1);
 
     // Input the graph
     for (int i = 0; i < m; ++i) {
@@ -85,9 +82,26 @@ int main() {
 
     int result = 0;
 
-    // Run Dijkstra for each node to determine the global maximum line changes
+    // Creation of lines graph
+    // Idea: Start in a certain point and check its adjacencies
+    for (int i = 1 ; i <= n; i++){ // In a point
+        for (size_t j = 0; j < graph[i].size(); j++){ // Check all adjacencies and link lines 
+            for (size_t k = j + 1; k < graph[i].size(); k++) {
+                int line1 = graph[i][j].line;
+                int line2 = graph[i][k].line;
+                if (line1 != line2){
+                    lines_graph[line1].push_back(line2);
+                    lines_graph[line2].push_back(line1);
+                }
+            }
+        }
+    }
+    
+    print_lines_graph(lines_graph, n);
+
+    // Run bfs for each node to determine the global maximum line changes
     for (int i = 1; i <= n; i++) {
-        int max_changes = dijkstra_line_changes(i, graph, n, l);
+        int max_changes = bfs_lines_graph(i, lines_graph, l);
         if (max_changes == -1) {
             cout << -1 << endl;
             return 0;
