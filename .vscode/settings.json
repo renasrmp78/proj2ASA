@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.tcc": "cpp",
+        "tuple": "cpp",
+        "array": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp",
+        "queue": "cpp",
+        "ostream": "cpp",
+        "iostream": "cpp"
+    }
+}
